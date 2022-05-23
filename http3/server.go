@@ -44,7 +44,7 @@ const (
 )
 
 func versionToALPN(v protocol.VersionNumber) string {
-	if v == protocol.Version1 {
+	if v == protocol.Version1 || v == protocol.Version2 {
 		return nextProtoH3
 	}
 	if v == protocol.VersionTLS || v == protocol.VersionDraft29 {
