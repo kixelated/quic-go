@@ -14,17 +14,21 @@ import (
 // writePacket returns a new raw packet with the specified header and payload
 func writePacket(hdr *wire.ExtendedHeader, data []byte) []byte {
 	buf := &bytes.Buffer{}
-	hdr.Write(buf, protocol.VersionTLS)
+	hdr.Write(buf, hdr.Version)
 	return append(buf.Bytes(), data...)
 }
 
 // packRawPayload returns a new raw payload containing given frames
 func packRawPayload(version protocol.VersionNumber, frames []wire.Frame) []byte {
-	buf := new(bytes.Buffer)
+	var b []byte
 	for _, cf := range frames {
-		cf.Write(buf, version)
+		var err error
+		b, err = cf.Append(b, version)
+		if err != nil {
+			panic(err)
+		}
 	}
-	return buf.Bytes()
+	return b
 }
 
 // ComposeInitialPacket returns an Initial packet encrypted under key

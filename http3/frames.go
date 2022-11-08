@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 
 	"github.com/lucas-clemente/quic-go/internal/protocol"
 	"github.com/lucas-clemente/quic-go/quicvarint"
@@ -14,7 +13,7 @@ import (
 // FrameType is the frame type of a HTTP/3 frame
 type FrameType uint64
 
-type unknownFrameHandlerFunc func(FrameType) (processed bool, err error)
+type unknownFrameHandlerFunc func(FrameType, error) (processed bool, err error)
 
 type frame interface{}
 
@@ -25,19 +24,27 @@ func parseNextFrame(r io.Reader, unknownFrameHandler unknownFrameHandlerFunc) (f
 	for {
 		t, err := quicvarint.Read(qr)
 		if err != nil {
+			if unknownFrameHandler != nil {
+				hijacked, err := unknownFrameHandler(0, err)
+				if err != nil {
+					return nil, err
+				}
+				if hijacked {
+					return nil, errHijacked
+				}
+			}
 			return nil, err
 		}
 		// Call the unknownFrameHandler for frames not defined in the HTTP/3 spec
 		if t > 0xd && unknownFrameHandler != nil {
-			hijacked, err := unknownFrameHandler(FrameType(t))
+			hijacked, err := unknownFrameHandler(FrameType(t), nil)
 			if err != nil {
 				return nil, err
 			}
-			// If the unknownFrameHandler didn't process the frame, it is our responsibility to skip it.
 			if hijacked {
 				return nil, errHijacked
 			}
-			continue
+			// If the unknownFrameHandler didn't process the frame, it is our responsibility to skip it.
 		}
 		l, err := quicvarint.Read(qr)
 		if err != nil {
@@ -57,7 +64,7 @@ func parseNextFrame(r io.Reader, unknownFrameHandler unknownFrameHandlerFunc) (f
 		case 0xd: // MAX_PUSH_ID
 		}
 		// skip over unknown frames
-		if _, err := io.CopyN(ioutil.Discard, qr, int64(l)); err != nil {
+		if _, err := io.CopyN(io.Discard, qr, int64(l)); err != nil {
 			return nil, err
 		}
 	}
@@ -67,18 +74,18 @@ type dataFrame struct {
 	Length uint64
 }
 
-func (f *dataFrame) Write(b *bytes.Buffer) {
-	quicvarint.Write(b, 0x0)
-	quicvarint.Write(b, f.Length)
+func (f *dataFrame) Append(b []byte) []byte {
+	b = quicvarint.Append(b, 0x0)
+	return quicvarint.Append(b, f.Length)
 }
 
 type headersFrame struct {
 	Length uint64
 }
 
-func (f *headersFrame) Write(b *bytes.Buffer) {
-	quicvarint.Write(b, 0x1)
-	quicvarint.Write(b, f.Length)
+func (f *headersFrame) Append(b []byte) []byte {
+	b = quicvarint.Append(b, 0x1)
+	return quicvarint.Append(b, f.Length)
 }
 
 const settingDatagram = 0xffd277
@@ -135,8 +142,8 @@ func parseSettingsFrame(r io.Reader, l uint64) (*settingsFrame, error) {
 	return frame, nil
 }
 
-func (f *settingsFrame) Write(b *bytes.Buffer) {
-	quicvarint.Write(b, 0x4)
+func (f *settingsFrame) Append(b []byte) []byte {
+	b = quicvarint.Append(b, 0x4)
 	var l protocol.ByteCount
 	for id, val := range f.Other {
 		l += quicvarint.Len(id) + quicvarint.Len(val)
@@ -144,13 +151,14 @@ func (f *settingsFrame) Write(b *bytes.Buffer) {
 	if f.Datagram {
 		l += quicvarint.Len(settingDatagram) + quicvarint.Len(1)
 	}
-	quicvarint.Write(b, uint64(l))
+	b = quicvarint.Append(b, uint64(l))
 	if f.Datagram {
-		quicvarint.Write(b, settingDatagram)
-		quicvarint.Write(b, 1)
+		b = quicvarint.Append(b, settingDatagram)
+		b = quicvarint.Append(b, 1)
 	}
 	for id, val := range f.Other {
-		quicvarint.Write(b, id)
-		quicvarint.Write(b, val)
+		b = quicvarint.Append(b, id)
+		b = quicvarint.Append(b, val)
 	}
+	return b
 }

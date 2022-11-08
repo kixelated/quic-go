@@ -14,6 +14,7 @@ const version = protocol.VersionTLS
 const PrefixLen = 1
 
 // Fuzz fuzzes the QUIC header.
+//
 //go:generate go run ./cmd/corpus.go
 func Fuzz(data []byte) int {
 	if len(data) < PrefixLen {
@@ -34,7 +35,7 @@ func Fuzz(data []byte) int {
 	if err != nil {
 		return 0
 	}
-	if !hdr.DestConnectionID.Equal(connID) {
+	if hdr.DestConnectionID != connID {
 		panic(fmt.Sprintf("Expected connection IDs to match: %s vs %s", hdr.DestConnectionID, connID))
 	}
 	if (hdr.Type == protocol.PacketType0RTT) != is0RTTPacket {
@@ -81,16 +82,16 @@ func fuzzVNP(data []byte) int {
 	if err != nil {
 		return 0
 	}
-	hdr, versions, err := wire.ParseVersionNegotiationPacket(bytes.NewReader(data))
+	dest, src, versions, err := wire.ParseVersionNegotiationPacket(data)
 	if err != nil {
 		return 0
 	}
-	if !hdr.DestConnectionID.Equal(connID) {
+	if !bytes.Equal(dest, connID.Bytes()) {
 		panic("connection IDs don't match")
 	}
 	if len(versions) == 0 {
 		panic("no versions")
 	}
-	wire.ComposeVersionNegotiation(hdr.SrcConnectionID, hdr.DestConnectionID, versions)
+	wire.ComposeVersionNegotiation(src, dest, versions)
 	return 1
 }

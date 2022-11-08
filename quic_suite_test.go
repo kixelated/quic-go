@@ -1,13 +1,13 @@
 package quic
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 	"sync"
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -26,7 +26,7 @@ var _ = BeforeEach(func() {
 })
 
 var _ = BeforeSuite(func() {
-	log.SetOutput(ioutil.Discard)
+	log.SetOutput(io.Discard)
 })
 
 var _ = AfterEach(func() {

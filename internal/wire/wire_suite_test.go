@@ -2,12 +2,13 @@ package wire
 
 import (
 	"bytes"
+	"encoding/binary"
 	"testing"
 
 	"github.com/lucas-clemente/quic-go/internal/protocol"
 	"github.com/lucas-clemente/quic-go/quicvarint"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -16,13 +17,15 @@ func TestWire(t *testing.T) {
 	RunSpecs(t, "Wire Suite")
 }
 
-const (
-	// a QUIC version that uses the IETF frame types
-	versionIETFFrames = protocol.VersionTLS
-)
-
 func encodeVarInt(i uint64) []byte {
 	b := &bytes.Buffer{}
 	quicvarint.Write(b, i)
 	return b.Bytes()
+}
+
+func appendVersion(data []byte, v protocol.VersionNumber) []byte {
+	offset := len(data)
+	data = append(data, []byte{0, 0, 0, 0}...)
+	binary.BigEndian.PutUint32(data[offset:], uint32(v))
+	return data
 }

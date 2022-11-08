@@ -246,7 +246,7 @@ func newCryptoSetup(
 		initialSealer:             initialSealer,
 		initialOpener:             initialOpener,
 		handshakeStream:           handshakeStream,
-		aead:                      newUpdatableAEAD(rttStats, tracer, logger),
+		aead:                      newUpdatableAEAD(rttStats, tracer, logger, version),
 		readEncLevel:              protocol.EncryptionInitial,
 		writeEncLevel:             protocol.EncryptionInitial,
 		runner:                    runner,
@@ -432,11 +432,10 @@ func (h *cryptoSetup) handleTransportParameters(data []byte) {
 
 // must be called after receiving the transport parameters
 func (h *cryptoSetup) marshalDataForSessionState() []byte {
-	buf := &bytes.Buffer{}
-	quicvarint.Write(buf, clientSessionStateRevision)
-	quicvarint.Write(buf, uint64(h.rttStats.SmoothedRTT().Microseconds()))
-	h.peerParams.MarshalForSessionTicket(buf)
-	return buf.Bytes()
+	b := make([]byte, 0, 256)
+	b = quicvarint.Append(b, clientSessionStateRevision)
+	b = quicvarint.Append(b, uint64(h.rttStats.SmoothedRTT().Microseconds()))
+	return h.peerParams.MarshalForSessionTicket(b)
 }
 
 func (h *cryptoSetup) handleDataFromSessionState(data []byte) {
@@ -572,8 +571,8 @@ func (h *cryptoSetup) SetReadKey(encLevel qtls.EncryptionLevel, suite *qtls.Ciph
 			panic("Received 0-RTT read key for the client")
 		}
 		h.zeroRTTOpener = newLongHeaderOpener(
-			createAEAD(suite, trafficSecret),
-			newHeaderProtector(suite, trafficSecret, true),
+			createAEAD(suite, trafficSecret, h.version),
+			newHeaderProtector(suite, trafficSecret, true, h.version),
 		)
 		h.mutex.Unlock()
 		h.logger.Debugf("Installed 0-RTT Read keys (using %s)", tls.CipherSuiteName(suite.ID))
@@ -584,8 +583,8 @@ func (h *cryptoSetup) SetReadKey(encLevel qtls.EncryptionLevel, suite *qtls.Ciph
 	case qtls.EncryptionHandshake:
 		h.readEncLevel = protocol.EncryptionHandshake
 		h.handshakeOpener = newHandshakeOpener(
-			createAEAD(suite, trafficSecret),
-			newHeaderProtector(suite, trafficSecret, true),
+			createAEAD(suite, trafficSecret, h.version),
+			newHeaderProtector(suite, trafficSecret, true, h.version),
 			h.dropInitialKeys,
 			h.perspective,
 		)
@@ -612,8 +611,8 @@ func (h *cryptoSetup) SetWriteKey(encLevel qtls.EncryptionLevel, suite *qtls.Cip
 			panic("Received 0-RTT write key for the server")
 		}
 		h.zeroRTTSealer = newLongHeaderSealer(
-			createAEAD(suite, trafficSecret),
-			newHeaderProtector(suite, trafficSecret, true),
+			createAEAD(suite, trafficSecret, h.version),
+			newHeaderProtector(suite, trafficSecret, true, h.version),
 		)
 		h.mutex.Unlock()
 		h.logger.Debugf("Installed 0-RTT Write keys (using %s)", tls.CipherSuiteName(suite.ID))
@@ -624,8 +623,8 @@ func (h *cryptoSetup) SetWriteKey(encLevel qtls.EncryptionLevel, suite *qtls.Cip
 	case qtls.EncryptionHandshake:
 		h.writeEncLevel = protocol.EncryptionHandshake
 		h.handshakeSealer = newHandshakeSealer(
-			createAEAD(suite, trafficSecret),
-			newHeaderProtector(suite, trafficSecret, true),
+			createAEAD(suite, trafficSecret, h.version),
+			newHeaderProtector(suite, trafficSecret, true, h.version),
 			h.dropInitialKeys,
 			h.perspective,
 		)

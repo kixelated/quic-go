@@ -10,7 +10,7 @@ import (
 	quicproxy "github.com/lucas-clemente/quic-go/integrationtests/tools/proxy"
 	"github.com/lucas-clemente/quic-go/logging"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -26,7 +26,6 @@ var _ = Describe("Packetization", func() {
 			"localhost:0",
 			getTLSConfig(),
 			getQuicConfig(&quic.Config{
-				AcceptToken:             func(net.Addr, *quic.Token) bool { return true },
 				DisablePathMTUDiscovery: true,
 				Tracer:                  newTracer(func() logging.ConnectionTracer { return serverTracer }),
 			}),
@@ -85,11 +84,8 @@ var _ = Describe("Packetization", func() {
 		}
 		Expect(conn.CloseWithError(0, "")).To(Succeed())
 
-		countBundledPackets := func(packets []packet) (numBundled int) {
+		countBundledPackets := func(packets []shortHeaderPacket) (numBundled int) {
 			for _, p := range packets {
-				if p.hdr.IsLongHeader {
-					continue
-				}
 				var hasAck, hasStreamFrame bool
 				for _, f := range p.frames {
 					switch f.(type) {
@@ -106,8 +102,8 @@ var _ = Describe("Packetization", func() {
 			return
 		}
 
-		numBundledIncoming := countBundledPackets(clientTracer.getRcvdPackets())
-		numBundledOutgoing := countBundledPackets(serverTracer.getRcvdPackets())
+		numBundledIncoming := countBundledPackets(clientTracer.getRcvdShortHeaderPackets())
+		numBundledOutgoing := countBundledPackets(serverTracer.getRcvdShortHeaderPackets())
 		fmt.Fprintf(GinkgoWriter, "bundled incoming packets: %d / %d\n", numBundledIncoming, numMsg)
 		fmt.Fprintf(GinkgoWriter, "bundled outgoing packets: %d / %d\n", numBundledOutgoing, numMsg)
 		Expect(numBundledIncoming).To(And(

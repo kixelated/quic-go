@@ -19,7 +19,7 @@ import (
 	"github.com/lucas-clemente/quic-go/internal/protocol"
 	"github.com/lucas-clemente/quic-go/internal/testdata"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 )
@@ -311,6 +311,69 @@ var _ = Describe("HTTP tests", func() {
 				Expect(req.Body.Close()).To(Succeed())
 				Eventually(done).Should(BeClosed())
 			})
+
+			It("allows taking over the stream", func() {
+				mux.HandleFunc("/httpstreamer", func(w http.ResponseWriter, r *http.Request) {
+					defer GinkgoRecover()
+					w.WriteHeader(200)
+					w.(http.Flusher).Flush()
+
+					str := r.Body.(http3.HTTPStreamer).HTTPStream()
+					str.Write([]byte("foobar"))
+
+					// Do this in a Go routine, so that the handler returns early.
+					// This way, we can also check that the HTTP/3 doesn't close the stream.
+					go func() {
+						defer GinkgoRecover()
+						_, err := io.Copy(str, str)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(str.Close()).To(Succeed())
+					}()
+				})
+
+				req, err := http.NewRequest(http.MethodGet, "https://localhost:"+port+"/httpstreamer", nil)
+				Expect(err).ToNot(HaveOccurred())
+				rsp, err := client.Transport.(*http3.RoundTripper).RoundTripOpt(req, http3.RoundTripOpt{DontCloseRequestStream: true})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(rsp.StatusCode).To(Equal(200))
+
+				str := rsp.Body.(http3.HTTPStreamer).HTTPStream()
+				b := make([]byte, 6)
+				_, err = io.ReadFull(str, b)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(b).To(Equal([]byte("foobar")))
+
+				data := GeneratePRData(8 * 1024)
+				_, err = str.Write(data)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(str.Close()).To(Succeed())
+				repl, err := io.ReadAll(str)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(repl).To(Equal(data))
+			})
+
+			if version != protocol.VersionDraft29 {
+				It("serves other QUIC connections", func() {
+					tlsConf := testdata.GetTLSConfig()
+					tlsConf.NextProtos = []string{"h3"}
+					ln, err := quic.ListenAddr("localhost:0", tlsConf, nil)
+					Expect(err).ToNot(HaveOccurred())
+					done := make(chan struct{})
+					go func() {
+						defer GinkgoRecover()
+						defer close(done)
+						conn, err := ln.Accept(context.Background())
+						Expect(err).ToNot(HaveOccurred())
+						Expect(server.ServeQUICConn(conn)).To(Succeed())
+					}()
+
+					resp, err := client.Get(fmt.Sprintf("https://localhost:%d/hello", ln.Addr().(*net.UDPAddr).Port))
+					Expect(err).ToNot(HaveOccurred())
+					Expect(resp.StatusCode).To(Equal(http.StatusOK))
+					client.Transport.(io.Closer).Close()
+					Eventually(done).Should(BeClosed())
+				})
+			}
 		})
 	}
 })

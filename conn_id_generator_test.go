@@ -7,7 +7,7 @@ import (
 	"github.com/lucas-clemente/quic-go/internal/qerr"
 	"github.com/lucas-clemente/quic-go/internal/wire"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -16,15 +16,16 @@ var _ = Describe("Connection ID Generator", func() {
 		addedConnIDs       []protocol.ConnectionID
 		retiredConnIDs     []protocol.ConnectionID
 		removedConnIDs     []protocol.ConnectionID
-		replacedWithClosed map[string]packetHandler
+		replacedWithClosed []protocol.ConnectionID
 		queuedFrames       []wire.Frame
 		g                  *connIDGenerator
 	)
-	initialConnID := protocol.ConnectionID{1, 2, 3, 4, 5, 6, 7}
-	initialClientDestConnID := protocol.ConnectionID{0xa, 0xb, 0xc, 0xd, 0xe}
+	initialConnID := protocol.ParseConnectionID([]byte{1, 2, 3, 4, 5, 6, 7})
+	initialClientDestConnID := protocol.ParseConnectionID([]byte{0xa, 0xb, 0xc, 0xd, 0xe})
 
 	connIDToToken := func(c protocol.ConnectionID) protocol.StatelessResetToken {
-		return protocol.StatelessResetToken{c[0], c[0], c[0], c[0], c[0], c[0], c[0], c[0], c[0], c[0], c[0], c[0], c[0], c[0], c[0], c[0]}
+		b := c.Bytes()[0]
+		return protocol.StatelessResetToken{b, b, b, b, b, b, b, b, b, b, b, b, b, b, b, b}
 	}
 
 	BeforeEach(func() {
@@ -32,16 +33,19 @@ var _ = Describe("Connection ID Generator", func() {
 		retiredConnIDs = nil
 		removedConnIDs = nil
 		queuedFrames = nil
-		replacedWithClosed = make(map[string]packetHandler)
+		replacedWithClosed = nil
 		g = newConnIDGenerator(
 			initialConnID,
-			initialClientDestConnID,
+			&initialClientDestConnID,
 			func(c protocol.ConnectionID) { addedConnIDs = append(addedConnIDs, c) },
 			connIDToToken,
 			func(c protocol.ConnectionID) { removedConnIDs = append(removedConnIDs, c) },
 			func(c protocol.ConnectionID) { retiredConnIDs = append(retiredConnIDs, c) },
-			func(c protocol.ConnectionID, h packetHandler) { replacedWithClosed[string(c)] = h },
+			func(cs []protocol.ConnectionID, _ protocol.Perspective, _ []byte) {
+				replacedWithClosed = append(replacedWithClosed, cs...)
+			},
 			func(f wire.Frame) { queuedFrames = append(queuedFrames, f) },
+			&protocol.DefaultConnectionIDGenerator{ConnLen: initialConnID.Len()},
 			protocol.VersionDraft29,
 		)
 	})
@@ -174,14 +178,13 @@ var _ = Describe("Connection ID Generator", func() {
 	It("replaces with a closed connection for all connection IDs", func() {
 		Expect(g.SetMaxActiveConnIDs(5)).To(Succeed())
 		Expect(queuedFrames).To(HaveLen(4))
-		sess := NewMockPacketHandler(mockCtrl)
-		g.ReplaceWithClosed(sess)
+		g.ReplaceWithClosed(protocol.PerspectiveClient, []byte("foobar"))
 		Expect(replacedWithClosed).To(HaveLen(6)) // initial conn ID, initial client dest conn id, and newly issued ones
-		Expect(replacedWithClosed).To(HaveKeyWithValue(string(initialClientDestConnID), sess))
-		Expect(replacedWithClosed).To(HaveKeyWithValue(string(initialConnID), sess))
+		Expect(replacedWithClosed).To(ContainElement(initialClientDestConnID))
+		Expect(replacedWithClosed).To(ContainElement(initialConnID))
 		for _, f := range queuedFrames {
 			nf := f.(*wire.NewConnectionIDFrame)
-			Expect(replacedWithClosed).To(HaveKeyWithValue(string(nf.ConnectionID), sess))
+			Expect(replacedWithClosed).To(ContainElement(nf.ConnectionID))
 		}
 	})
 })

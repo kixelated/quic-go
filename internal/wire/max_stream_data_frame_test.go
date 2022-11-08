@@ -6,7 +6,7 @@ import (
 	"github.com/lucas-clemente/quic-go/internal/protocol"
 	"github.com/lucas-clemente/quic-go/quicvarint"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -17,7 +17,7 @@ var _ = Describe("MAX_STREAM_DATA frame", func() {
 			data = append(data, encodeVarInt(0xdeadbeef)...) // Stream ID
 			data = append(data, encodeVarInt(0x12345678)...) // Offset
 			b := bytes.NewReader(data)
-			frame, err := parseMaxStreamDataFrame(b, versionIETFFrames)
+			frame, err := parseMaxStreamDataFrame(b, protocol.Version1)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(frame.StreamID).To(Equal(protocol.StreamID(0xdeadbeef)))
 			Expect(frame.MaximumStreamData).To(Equal(protocol.ByteCount(0x12345678)))
@@ -28,17 +28,17 @@ var _ = Describe("MAX_STREAM_DATA frame", func() {
 			data := []byte{0x11}
 			data = append(data, encodeVarInt(0xdeadbeef)...) // Stream ID
 			data = append(data, encodeVarInt(0x12345678)...) // Offset
-			_, err := parseMaxStreamDataFrame(bytes.NewReader(data), versionIETFFrames)
+			_, err := parseMaxStreamDataFrame(bytes.NewReader(data), protocol.Version1)
 			Expect(err).NotTo(HaveOccurred())
 			for i := range data {
-				_, err := parseMaxStreamDataFrame(bytes.NewReader(data[0:i]), versionIETFFrames)
+				_, err := parseMaxStreamDataFrame(bytes.NewReader(data[0:i]), protocol.Version1)
 				Expect(err).To(HaveOccurred())
 			}
 		})
 	})
 
 	Context("writing", func() {
-		It("has proper min length", func() {
+		It("has proper length", func() {
 			f := &MaxStreamDataFrame{
 				StreamID:          0x1337,
 				MaximumStreamData: 0xdeadbeef,
@@ -47,7 +47,6 @@ var _ = Describe("MAX_STREAM_DATA frame", func() {
 		})
 
 		It("writes a sample frame", func() {
-			b := &bytes.Buffer{}
 			f := &MaxStreamDataFrame{
 				StreamID:          0xdecafbad,
 				MaximumStreamData: 0xdeadbeefcafe42,
@@ -55,9 +54,9 @@ var _ = Describe("MAX_STREAM_DATA frame", func() {
 			expected := []byte{0x11}
 			expected = append(expected, encodeVarInt(0xdecafbad)...)
 			expected = append(expected, encodeVarInt(0xdeadbeefcafe42)...)
-			err := f.Write(b, versionIETFFrames)
+			b, err := f.Append(nil, protocol.Version1)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(b.Bytes()).To(Equal(expected))
+			Expect(b).To(Equal(expected))
 		})
 	})
 })

@@ -1,14 +1,11 @@
 package self_test
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
 	mrand "math/rand"
 	"net"
-	"runtime/pprof"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -17,7 +14,7 @@ import (
 	"github.com/lucas-clemente/quic-go/internal/utils"
 	"github.com/lucas-clemente/quic-go/logging"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -43,12 +40,6 @@ func (c *faultyConn) WriteTo(p []byte, addr net.Addr) (int, error) {
 		return c.PacketConn.WriteTo(p, addr)
 	}
 	return 0, io.ErrClosedPipe
-}
-
-func areHandshakesRunning() bool {
-	var b bytes.Buffer
-	pprof.Lookup("goroutine").WriteTo(&b, 1)
-	return strings.Contains(b.String(), "RunHandshake")
 }
 
 var _ = Describe("Timeout tests", func() {
@@ -235,7 +226,7 @@ var _ = Describe("Timeout tests", func() {
 					lastAckElicitingPacketSentAt = p.time
 				}
 			}
-			rcvdPackets := tr.getRcvdPackets()
+			rcvdPackets := tr.getRcvdShortHeaderPackets()
 			lastPacketRcvdAt := rcvdPackets[len(rcvdPackets)-1].time
 			// We're ignoring here that only the first ack-eliciting packet sent resets the idle timeout.
 			// This is ok since we're dealing with a lossless connection here,
@@ -355,7 +346,7 @@ var _ = Describe("Timeout tests", func() {
 			getTLSClientConfig(),
 			getQuicConfig(&quic.Config{
 				MaxIdleTimeout:          idleTimeout,
-				KeepAlive:               true,
+				KeepAlivePeriod:         idleTimeout / 2,
 				DisablePathMTUDiscovery: true,
 			}),
 		)
@@ -381,14 +372,6 @@ var _ = Describe("Timeout tests", func() {
 
 	Context("faulty packet conns", func() {
 		const handshakeTimeout = time.Second / 2
-
-		BeforeEach(func() {
-			Expect(areHandshakesRunning()).To(BeFalse())
-		})
-
-		AfterEach(func() {
-			Expect(areHandshakesRunning()).To(BeFalse())
-		})
 
 		runServer := func(ln quic.Listener) error {
 			conn, err := ln.Accept(context.Background())
@@ -480,7 +463,7 @@ var _ = Describe("Timeout tests", func() {
 				getQuicConfig(&quic.Config{
 					HandshakeIdleTimeout:    handshakeTimeout,
 					MaxIdleTimeout:          handshakeTimeout,
-					KeepAlive:               true,
+					KeepAlivePeriod:         handshakeTimeout / 2,
 					DisablePathMTUDiscovery: true,
 				}),
 			)

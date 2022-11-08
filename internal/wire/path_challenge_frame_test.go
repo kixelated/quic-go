@@ -6,7 +6,7 @@ import (
 
 	"github.com/lucas-clemente/quic-go/internal/protocol"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -22,10 +22,10 @@ var _ = Describe("PATH_CHALLENGE frame", func() {
 
 		It("errors on EOFs", func() {
 			data := []byte{0x1a, 1, 2, 3, 4, 5, 6, 7, 8}
-			_, err := parsePathChallengeFrame(bytes.NewReader(data), versionIETFFrames)
+			_, err := parsePathChallengeFrame(bytes.NewReader(data), protocol.Version1)
 			Expect(err).NotTo(HaveOccurred())
 			for i := range data {
-				_, err := parsePathChallengeFrame(bytes.NewReader(data[0:i]), versionIETFFrames)
+				_, err := parsePathChallengeFrame(bytes.NewReader(data[0:i]), protocol.Version1)
 				Expect(err).To(MatchError(io.EOF))
 			}
 		})
@@ -33,14 +33,13 @@ var _ = Describe("PATH_CHALLENGE frame", func() {
 
 	Context("when writing", func() {
 		It("writes a sample frame", func() {
-			b := &bytes.Buffer{}
 			frame := PathChallengeFrame{Data: [8]byte{0xde, 0xad, 0xbe, 0xef, 0xca, 0xfe, 0x13, 0x37}}
-			err := frame.Write(b, protocol.VersionWhatever)
+			b, err := frame.Append(nil, protocol.VersionWhatever)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(b.Bytes()).To(Equal([]byte{0x1a, 0xde, 0xad, 0xbe, 0xef, 0xca, 0xfe, 0x13, 0x37}))
+			Expect(b).To(Equal([]byte{0x1a, 0xde, 0xad, 0xbe, 0xef, 0xca, 0xfe, 0x13, 0x37}))
 		})
 
-		It("has the correct min length", func() {
+		It("has the correct length", func() {
 			frame := PathChallengeFrame{}
 			Expect(frame.Length(protocol.VersionWhatever)).To(Equal(protocol.ByteCount(9)))
 		})

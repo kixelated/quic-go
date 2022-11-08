@@ -2,7 +2,6 @@ package tokens
 
 import (
 	"encoding/binary"
-	"fmt"
 	"math/rand"
 	"net"
 	"time"
@@ -74,10 +73,9 @@ func newToken(tg *handshake.TokenGenerator, data []byte) int {
 	if token.SentTime.Before(start) || token.SentTime.After(time.Now()) {
 		panic("incorrect send time")
 	}
-	if token.OriginalDestConnectionID != nil || token.RetrySrcConnectionID != nil {
+	if token.OriginalDestConnectionID.Len() > 0 || token.RetrySrcConnectionID.Len() > 0 {
 		panic("didn't expect connection IDs")
 	}
-	checkAddr(token.RemoteAddr, addr)
 	return 1
 }
 
@@ -91,12 +89,12 @@ func newRetryToken(tg *handshake.TokenGenerator, data []byte) int {
 	if len(data) < origDestConnIDLen {
 		return -1
 	}
-	origDestConnID := protocol.ConnectionID(data[:origDestConnIDLen])
+	origDestConnID := protocol.ParseConnectionID(data[:origDestConnIDLen])
 	data = data[origDestConnIDLen:]
 	if len(data) < retrySrcConnIDLen {
 		return -1
 	}
-	retrySrcConnID := protocol.ConnectionID(data[:retrySrcConnIDLen])
+	retrySrcConnID := protocol.ParseConnectionID(data[:retrySrcConnIDLen])
 	data = data[retrySrcConnIDLen:]
 
 	if len(data) < 1 {
@@ -134,28 +132,11 @@ func newRetryToken(tg *handshake.TokenGenerator, data []byte) int {
 	if token.SentTime.Before(start) || token.SentTime.After(time.Now()) {
 		panic("incorrect send time")
 	}
-	if !token.OriginalDestConnectionID.Equal(origDestConnID) {
+	if token.OriginalDestConnectionID != origDestConnID {
 		panic("orig dest conn ID doesn't match")
 	}
-	if !token.RetrySrcConnectionID.Equal(retrySrcConnID) {
+	if token.RetrySrcConnectionID != retrySrcConnID {
 		panic("retry src conn ID doesn't match")
 	}
-	checkAddr(token.RemoteAddr, addr)
 	return 1
-}
-
-func checkAddr(tokenAddr string, addr net.Addr) {
-	if udpAddr, ok := addr.(*net.UDPAddr); ok {
-		// For UDP addresses, we encode only the IP (not the port).
-		if ip := udpAddr.IP.String(); tokenAddr != ip {
-			fmt.Printf("%s vs %s", tokenAddr, ip)
-			panic("wrong remote address for a net.UDPAddr")
-		}
-		return
-	}
-
-	if tokenAddr != addr.String() {
-		fmt.Printf("%s vs %s", tokenAddr, addr.String())
-		panic("wrong remote address")
-	}
 }

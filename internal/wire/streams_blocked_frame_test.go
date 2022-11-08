@@ -8,7 +8,7 @@ import (
 	"github.com/lucas-clemente/quic-go/internal/protocol"
 	"github.com/lucas-clemente/quic-go/quicvarint"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -39,10 +39,10 @@ var _ = Describe("STREAMS_BLOCKED frame", func() {
 		It("errors on EOFs", func() {
 			data := []byte{0x16}
 			data = append(data, encodeVarInt(0x12345678)...)
-			_, err := parseStreamsBlockedFrame(bytes.NewReader(data), versionIETFFrames)
+			_, err := parseStreamsBlockedFrame(bytes.NewReader(data), protocol.Version1)
 			Expect(err).ToNot(HaveOccurred())
 			for i := range data {
-				_, err := parseStreamsBlockedFrame(bytes.NewReader(data[:i]), versionIETFFrames)
+				_, err := parseStreamsBlockedFrame(bytes.NewReader(data[:i]), protocol.Version1)
 				Expect(err).To(MatchError(io.EOF))
 			}
 		})
@@ -55,9 +55,9 @@ var _ = Describe("STREAMS_BLOCKED frame", func() {
 					Type:        streamType,
 					StreamLimit: protocol.MaxStreamCount,
 				}
-				b := &bytes.Buffer{}
-				Expect(f.Write(b, protocol.VersionWhatever)).To(Succeed())
-				frame, err := parseStreamsBlockedFrame(bytes.NewReader(b.Bytes()), protocol.VersionWhatever)
+				b, err := f.Append(nil, protocol.VersionWhatever)
+				Expect(err).ToNot(HaveOccurred())
+				frame, err := parseStreamsBlockedFrame(bytes.NewReader(b), protocol.VersionWhatever)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(frame).To(Equal(f))
 			})
@@ -67,9 +67,9 @@ var _ = Describe("STREAMS_BLOCKED frame", func() {
 					Type:        streamType,
 					StreamLimit: protocol.MaxStreamCount + 1,
 				}
-				b := &bytes.Buffer{}
-				Expect(f.Write(b, protocol.VersionWhatever)).To(Succeed())
-				_, err := parseStreamsBlockedFrame(bytes.NewReader(b.Bytes()), protocol.VersionWhatever)
+				b, err := f.Append(nil, protocol.VersionWhatever)
+				Expect(err).ToNot(HaveOccurred())
+				_, err = parseStreamsBlockedFrame(bytes.NewReader(b), protocol.VersionWhatever)
 				Expect(err).To(MatchError(fmt.Sprintf("%d exceeds the maximum stream count", protocol.MaxStreamCount+1)))
 			})
 		}
@@ -77,27 +77,27 @@ var _ = Describe("STREAMS_BLOCKED frame", func() {
 
 	Context("writing", func() {
 		It("writes a frame for bidirectional streams", func() {
-			b := &bytes.Buffer{}
 			f := StreamsBlockedFrame{
 				Type:        protocol.StreamTypeBidi,
 				StreamLimit: 0xdeadbeefcafe,
 			}
-			Expect(f.Write(b, protocol.VersionWhatever)).To(Succeed())
+			b, err := f.Append(nil, protocol.VersionWhatever)
+			Expect(err).ToNot(HaveOccurred())
 			expected := []byte{0x16}
 			expected = append(expected, encodeVarInt(0xdeadbeefcafe)...)
-			Expect(b.Bytes()).To(Equal(expected))
+			Expect(b).To(Equal(expected))
 		})
 
 		It("writes a frame for unidirectional streams", func() {
-			b := &bytes.Buffer{}
 			f := StreamsBlockedFrame{
 				Type:        protocol.StreamTypeUni,
 				StreamLimit: 0xdeadbeefcafe,
 			}
-			Expect(f.Write(b, protocol.VersionWhatever)).To(Succeed())
+			b, err := f.Append(nil, protocol.VersionWhatever)
+			Expect(err).ToNot(HaveOccurred())
 			expected := []byte{0x17}
 			expected = append(expected, encodeVarInt(0xdeadbeefcafe)...)
-			Expect(b.Bytes()).To(Equal(expected))
+			Expect(b).To(Equal(expected))
 		})
 
 		It("has the correct min length", func() {

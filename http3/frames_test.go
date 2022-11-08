@@ -2,14 +2,19 @@ package http3
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 
 	"github.com/lucas-clemente/quic-go/quicvarint"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
+
+type errReader struct{ err error }
+
+func (e errReader) Read([]byte) (int, error) { return 0, e.err }
 
 var _ = Describe("Frames", func() {
 	appendVarInt := func(b []byte, val uint64) []byte {
@@ -19,12 +24,12 @@ var _ = Describe("Frames", func() {
 	}
 
 	It("skips unknown frames", func() {
-		data := appendVarInt(nil, 0xdeadbeef) // type byte
-		data = appendVarInt(data, 0x42)
-		data = append(data, make([]byte, 0x42)...)
-		buf := bytes.NewBuffer(data)
-		(&dataFrame{Length: 0x1234}).Write(buf)
-		frame, err := parseNextFrame(buf, nil)
+		b := appendVarInt(nil, 0xdeadbeef) // type byte
+		b = appendVarInt(b, 0x42)
+		b = append(b, make([]byte, 0x42)...)
+		b = (&dataFrame{Length: 0x1234}).Append(b)
+		r := bytes.NewReader(b)
+		frame, err := parseNextFrame(r, nil)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(frame).To(BeAssignableToTypeOf(&dataFrame{}))
 		Expect(frame.(*dataFrame).Length).To(Equal(uint64(0x1234)))
@@ -41,9 +46,8 @@ var _ = Describe("Frames", func() {
 		})
 
 		It("writes", func() {
-			buf := &bytes.Buffer{}
-			(&dataFrame{Length: 0xdeadbeef}).Write(buf)
-			frame, err := parseNextFrame(buf, nil)
+			b := (&dataFrame{Length: 0xdeadbeef}).Append(nil)
+			frame, err := parseNextFrame(bytes.NewReader(b), nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(err).ToNot(HaveOccurred())
 			Expect(frame).To(BeAssignableToTypeOf(&dataFrame{}))
@@ -62,9 +66,8 @@ var _ = Describe("Frames", func() {
 		})
 
 		It("writes", func() {
-			buf := &bytes.Buffer{}
-			(&headersFrame{Length: 0xdeadbeef}).Write(buf)
-			frame, err := parseNextFrame(buf, nil)
+			b := (&headersFrame{Length: 0xdeadbeef}).Append(nil)
+			frame, err := parseNextFrame(bytes.NewReader(b), nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(err).ToNot(HaveOccurred())
 			Expect(frame).To(BeAssignableToTypeOf(&headersFrame{}))
@@ -107,9 +110,7 @@ var _ = Describe("Frames", func() {
 				99: 999,
 				13: 37,
 			}}
-			buf := &bytes.Buffer{}
-			sf.Write(buf)
-			frame, err := parseNextFrame(buf, nil)
+			frame, err := parseNextFrame(bytes.NewReader(sf.Append(nil)), nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(frame).To(Equal(sf))
 		})
@@ -119,10 +120,8 @@ var _ = Describe("Frames", func() {
 				13:         37,
 				0xdeadbeef: 0xdecafbad,
 			}}
-			buf := &bytes.Buffer{}
-			sf.Write(buf)
+			data := sf.Append(nil)
 
-			data := buf.Bytes()
 			_, err := parseNextFrame(bytes.NewReader(data), nil)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -172,9 +171,7 @@ var _ = Describe("Frames", func() {
 
 			It("writes the H3_DATAGRAM setting", func() {
 				sf := &settingsFrame{Datagram: true}
-				buf := &bytes.Buffer{}
-				sf.Write(buf)
-				frame, err := parseNextFrame(buf, nil)
+				frame, err := parseNextFrame(bytes.NewReader(sf.Append(nil)), nil)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(frame).To(Equal(sf))
 			})
@@ -189,7 +186,8 @@ var _ = Describe("Frames", func() {
 			buf.Write(customFrameContents)
 
 			var called bool
-			_, err := parseNextFrame(buf, func(ft FrameType) (hijacked bool, err error) {
+			_, err := parseNextFrame(buf, func(ft FrameType, e error) (hijacked bool, err error) {
+				Expect(e).ToNot(HaveOccurred())
 				Expect(ft).To(BeEquivalentTo(1337))
 				called = true
 				b := make([]byte, 3)
@@ -202,22 +200,32 @@ var _ = Describe("Frames", func() {
 			Expect(called).To(BeTrue())
 		})
 
+		It("passes on errors that occur when reading the frame type", func() {
+			testErr := errors.New("test error")
+			var called bool
+			_, err := parseNextFrame(errReader{err: testErr}, func(ft FrameType, e error) (hijacked bool, err error) {
+				Expect(e).To(MatchError(testErr))
+				Expect(ft).To(BeZero())
+				called = true
+				return true, nil
+			})
+			Expect(err).To(MatchError(errHijacked))
+			Expect(called).To(BeTrue())
+		})
+
 		It("reads a frame without hijacking the stream", func() {
-			buf := &bytes.Buffer{}
-			quicvarint.Write(buf, 1337)
+			b := quicvarint.Append(nil, 1337)
 			customFrameContents := []byte("custom frame")
-			buf.Write(customFrameContents)
-			(&dataFrame{Length: 6}).Write(buf)
-			buf.WriteString("foobar")
+			b = quicvarint.Append(b, uint64(len(customFrameContents)))
+			b = append(b, customFrameContents...)
+			b = (&dataFrame{Length: 6}).Append(b)
+			b = append(b, []byte("foobar")...)
 
 			var called bool
-			frame, err := parseNextFrame(buf, func(ft FrameType) (hijacked bool, err error) {
+			frame, err := parseNextFrame(bytes.NewReader(b), func(ft FrameType, e error) (hijacked bool, err error) {
+				Expect(e).ToNot(HaveOccurred())
 				Expect(ft).To(BeEquivalentTo(1337))
 				called = true
-				b := make([]byte, len(customFrameContents))
-				_, err = io.ReadFull(buf, b)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(string(b)).To(Equal(string(customFrameContents)))
 				return false, nil
 			})
 			Expect(err).ToNot(HaveOccurred())
