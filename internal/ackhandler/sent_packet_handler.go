@@ -849,3 +849,7 @@ func (h *sentPacketHandler) SetHandshakeConfirmed() {
 	// Make sure the timer is armed now, if necessary.
 	h.setLossDetectionTimer()
 }
+
+func (h *sentPacketHandler) BandwidthEstimate() congestion.Bandwidth {
+	return h.congestion.BandwidthEstimate()
+}
