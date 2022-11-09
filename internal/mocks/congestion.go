@@ -9,6 +9,7 @@ import (
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
+	congestion "github.com/lucas-clemente/quic-go/internal/congestion"
 	protocol "github.com/lucas-clemente/quic-go/internal/protocol"
 )
 
@@ -33,6 +34,20 @@ func NewMockSendAlgorithmWithDebugInfos(ctrl *gomock.Controller) *MockSendAlgori
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockSendAlgorithmWithDebugInfos) EXPECT() *MockSendAlgorithmWithDebugInfosMockRecorder {
 	return m.recorder
+}
+
+// BandwidthEstimate mocks base method.
+func (m *MockSendAlgorithmWithDebugInfos) BandwidthEstimate() congestion.Bandwidth {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BandwidthEstimate")
+	ret0, _ := ret[0].(congestion.Bandwidth)
+	return ret0
+}
+
+// BandwidthEstimate indicates an expected call of BandwidthEstimate.
+func (mr *MockSendAlgorithmWithDebugInfosMockRecorder) BandwidthEstimate() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BandwidthEstimate", reflect.TypeOf((*MockSendAlgorithmWithDebugInfos)(nil).BandwidthEstimate))
 }
 
 // CanSend mocks base method.

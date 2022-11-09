@@ -10,6 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	ackhandler "github.com/lucas-clemente/quic-go/internal/ackhandler"
+	congestion "github.com/lucas-clemente/quic-go/internal/congestion"
 	protocol "github.com/lucas-clemente/quic-go/internal/protocol"
 	wire "github.com/lucas-clemente/quic-go/internal/wire"
 )
@@ -35,6 +36,20 @@ func NewMockSentPacketHandler(ctrl *gomock.Controller) *MockSentPacketHandler {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockSentPacketHandler) EXPECT() *MockSentPacketHandlerMockRecorder {
 	return m.recorder
+}
+
+// BandwidthEstimate mocks base method.
+func (m *MockSentPacketHandler) BandwidthEstimate() congestion.Bandwidth {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BandwidthEstimate")
+	ret0, _ := ret[0].(congestion.Bandwidth)
+	return ret0
+}
+
+// BandwidthEstimate indicates an expected call of BandwidthEstimate.
+func (mr *MockSentPacketHandlerMockRecorder) BandwidthEstimate() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BandwidthEstimate", reflect.TypeOf((*MockSentPacketHandler)(nil).BandwidthEstimate))
 }
 
 // DropPackets mocks base method.

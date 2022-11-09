@@ -67,6 +67,20 @@ func (mr *MockEarlyConnectionMockRecorder) AcceptUniStream(arg0 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AcceptUniStream", reflect.TypeOf((*MockEarlyConnection)(nil).AcceptUniStream), arg0)
 }
 
+// BandwidthEstimate mocks base method.
+func (m *MockEarlyConnection) BandwidthEstimate() uint64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BandwidthEstimate")
+	ret0, _ := ret[0].(uint64)
+	return ret0
+}
+
+// BandwidthEstimate indicates an expected call of BandwidthEstimate.
+func (mr *MockEarlyConnectionMockRecorder) BandwidthEstimate() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BandwidthEstimate", reflect.TypeOf((*MockEarlyConnection)(nil).BandwidthEstimate))
+}
+
 // CloseWithError mocks base method.
 func (m *MockEarlyConnection) CloseWithError(arg0 qerr.ApplicationErrorCode, arg1 string) error {
 	m.ctrl.T.Helper()
