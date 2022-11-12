@@ -185,8 +185,13 @@ type Connection interface {
 	// ReceiveMessage gets a message received in a datagram, as specified in RFC 9221.
 	ReceiveMessage() ([]byte, error)
 
-	// Returns the estimated bandwidth in bits/second
-	BandwidthEstimate() uint64
+	// Returns the estimated max send bandwidth in bits/second as reported by the congestion controller.
+	// If SetMaxBandwidth is non-zero, that value is returned instead if it is lower.
+	GetMaxBandwidth() uint64
+
+	// SetMaxBandwidth artificially limits the maximum send bandwidth to the provided bits/second.
+	// This is disabled by setting a value of 0, which is the default.
+	SetMaxBandwidth(limit uint64)
 }
 
 // An EarlyConnection is a connection that is handshaking.

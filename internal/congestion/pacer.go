@@ -10,15 +10,18 @@ import (
 
 const maxBurstSizePackets = 10
 
+var _ Pacer = &pacer{}
+
 // The pacer implements a token bucket pacing algorithm.
 type pacer struct {
 	budgetAtLastSent     protocol.ByteCount
 	maxDatagramSize      protocol.ByteCount
 	lastSentTime         time.Time
 	getAdjustedBandwidth func() uint64 // in bytes/s
+	clock                Clock
 }
 
-func newPacer(getBandwidth func() Bandwidth) *pacer {
+func NewPacer(clock Clock, getBandwidth func() Bandwidth) *pacer {
 	p := &pacer{
 		maxDatagramSize: initialMaxDatagramSize,
 		getAdjustedBandwidth: func() uint64 {
@@ -30,6 +33,7 @@ func newPacer(getBandwidth func() Bandwidth) *pacer {
 			// provided the congestion window is fully utilized and acknowledgments arrive at regular intervals.
 			return bw * 5 / 4
 		},
+		clock: clock,
 	}
 	p.budgetAtLastSent = p.maxBurstSize()
 	return p
@@ -74,4 +78,8 @@ func (p *pacer) TimeUntilSend() time.Time {
 
 func (p *pacer) SetMaxDatagramSize(s protocol.ByteCount) {
 	p.maxDatagramSize = s
+}
+
+func (p *pacer) HasBudget() bool {
+	return p.Budget(p.clock.Now()) >= p.maxDatagramSize
 }

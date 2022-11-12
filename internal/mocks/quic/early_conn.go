@@ -67,20 +67,6 @@ func (mr *MockEarlyConnectionMockRecorder) AcceptUniStream(arg0 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AcceptUniStream", reflect.TypeOf((*MockEarlyConnection)(nil).AcceptUniStream), arg0)
 }
 
-// BandwidthEstimate mocks base method.
-func (m *MockEarlyConnection) BandwidthEstimate() uint64 {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BandwidthEstimate")
-	ret0, _ := ret[0].(uint64)
-	return ret0
-}
-
-// BandwidthEstimate indicates an expected call of BandwidthEstimate.
-func (mr *MockEarlyConnectionMockRecorder) BandwidthEstimate() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BandwidthEstimate", reflect.TypeOf((*MockEarlyConnection)(nil).BandwidthEstimate))
-}
-
 // CloseWithError mocks base method.
 func (m *MockEarlyConnection) CloseWithError(arg0 qerr.ApplicationErrorCode, arg1 string) error {
 	m.ctrl.T.Helper()
@@ -121,6 +107,20 @@ func (m *MockEarlyConnection) Context() context.Context {
 func (mr *MockEarlyConnectionMockRecorder) Context() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockEarlyConnection)(nil).Context))
+}
+
+// GetMaxBandwidth mocks base method.
+func (m *MockEarlyConnection) GetMaxBandwidth() uint64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMaxBandwidth")
+	ret0, _ := ret[0].(uint64)
+	return ret0
+}
+
+// GetMaxBandwidth indicates an expected call of GetMaxBandwidth.
+func (mr *MockEarlyConnectionMockRecorder) GetMaxBandwidth() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMaxBandwidth", reflect.TypeOf((*MockEarlyConnection)(nil).GetMaxBandwidth))
 }
 
 // HandshakeComplete mocks base method.
@@ -266,4 +266,16 @@ func (m *MockEarlyConnection) SendMessage(arg0 []byte) error {
 func (mr *MockEarlyConnectionMockRecorder) SendMessage(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessage", reflect.TypeOf((*MockEarlyConnection)(nil).SendMessage), arg0)
+}
+
+// SetMaxBandwidth mocks base method.
+func (m *MockEarlyConnection) SetMaxBandwidth(arg0 uint64) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetMaxBandwidth", arg0)
+}
+
+// SetMaxBandwidth indicates an expected call of SetMaxBandwidth.
+func (mr *MockEarlyConnectionMockRecorder) SetMaxBandwidth(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMaxBandwidth", reflect.TypeOf((*MockEarlyConnection)(nil).SetMaxBandwidth), arg0)
 }

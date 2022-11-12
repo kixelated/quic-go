@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/lucas-clemente/quic-go/internal/ackhandler"
+	"github.com/lucas-clemente/quic-go/internal/congestion"
 	"github.com/lucas-clemente/quic-go/internal/flowcontrol"
 	"github.com/lucas-clemente/quic-go/internal/handshake"
 	"github.com/lucas-clemente/quic-go/internal/logutils"
@@ -2148,6 +2149,10 @@ func (s *connection) NextConnection() Connection {
 	return s
 }
 
-func (s *connection) BandwidthEstimate() uint64 {
-	return uint64(s.sentPacketHandler.BandwidthEstimate())
+func (s *connection) GetMaxBandwidth() uint64 {
+	return uint64(s.sentPacketHandler.GetMaxBandwidth())
+}
+
+func (s *connection) SetMaxBandwidth(limit uint64) {
+	s.sentPacketHandler.SetMaxBandwidth(congestion.Bandwidth(limit))
 }
