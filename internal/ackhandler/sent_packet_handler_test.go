@@ -498,6 +498,10 @@ var _ = Describe("SentPacketHandler", func() {
 				protocol.ByteCount(42),
 				true,
 			)
+
+			// The pacer requests the new bandwidth estimate from the congestion controller
+			cong.EXPECT().BandwidthEstimate()
+
 			handler.SentPacket(&Packet{
 				PacketNumber:    1,
 				Length:          42,
@@ -509,6 +513,7 @@ var _ = Describe("SentPacketHandler", func() {
 		It("should call MaybeExitSlowStart and OnPacketAcked", func() {
 			rcvTime := time.Now().Add(-5 * time.Second)
 			cong.EXPECT().OnPacketSent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(3)
+			cong.EXPECT().BandwidthEstimate().AnyTimes()
 			gomock.InOrder(
 				cong.EXPECT().MaybeExitSlowStart(), // must be called before packets are acked
 				cong.EXPECT().OnPacketAcked(protocol.PacketNumber(1), protocol.ByteCount(1), protocol.ByteCount(3), rcvTime),
@@ -524,6 +529,7 @@ var _ = Describe("SentPacketHandler", func() {
 
 		It("doesn't call OnPacketAcked when a retransmitted packet is acked", func() {
 			cong.EXPECT().OnPacketSent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+			cong.EXPECT().BandwidthEstimate().AnyTimes() // pacer updates the pacing rate
 			handler.SentPacket(ackElicitingPacket(&Packet{PacketNumber: 1, SendTime: time.Now().Add(-time.Hour)}))
 			handler.SentPacket(ackElicitingPacket(&Packet{PacketNumber: 2}))
 			// lose packet 1
@@ -543,6 +549,7 @@ var _ = Describe("SentPacketHandler", func() {
 
 		It("doesn't call OnPacketLost when a Path MTU probe packet is lost", func() {
 			cong.EXPECT().OnPacketSent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+			cong.EXPECT().BandwidthEstimate().AnyTimes()
 			var mtuPacketDeclaredLost bool
 			handler.SentPacket(ackElicitingPacket(&Packet{
 				PacketNumber:         1,
@@ -565,6 +572,7 @@ var _ = Describe("SentPacketHandler", func() {
 
 		It("calls OnPacketAcked and OnPacketLost with the right bytes_in_flight value", func() {
 			cong.EXPECT().OnPacketSent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(4)
+			cong.EXPECT().BandwidthEstimate().AnyTimes()
 			handler.SentPacket(ackElicitingPacket(&Packet{PacketNumber: 1, SendTime: time.Now().Add(-time.Hour)}))
 			handler.SentPacket(ackElicitingPacket(&Packet{PacketNumber: 2, SendTime: time.Now().Add(-30 * time.Minute)}))
 			handler.SentPacket(ackElicitingPacket(&Packet{PacketNumber: 3, SendTime: time.Now().Add(-30 * time.Minute)}))
@@ -592,6 +600,7 @@ var _ = Describe("SentPacketHandler", func() {
 		It("passes the bytes in flight to the congestion controller", func() {
 			handler.ReceivedPacket(protocol.EncryptionHandshake)
 			cong.EXPECT().OnPacketSent(gomock.Any(), protocol.ByteCount(42), gomock.Any(), protocol.ByteCount(42), true)
+			cong.EXPECT().BandwidthEstimate()
 			handler.SentPacket(&Packet{
 				Length:          42,
 				EncryptionLevel: protocol.EncryptionInitial,
@@ -614,6 +623,7 @@ var _ = Describe("SentPacketHandler", func() {
 			handler.ReceivedPacket(protocol.EncryptionHandshake)
 			cong.EXPECT().CanSend(gomock.Any()).Return(true).AnyTimes()
 			cong.EXPECT().OnPacketSent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+			cong.EXPECT().BandwidthEstimate().AnyTimes()
 			for i := protocol.PacketNumber(0); i < protocol.MaxOutstandingSentPackets; i++ {
 				Expect(handler.SendMode()).To(Equal(SendAny))
 				handler.SentPacket(ackElicitingPacket(&Packet{PacketNumber: i}))
@@ -628,19 +638,6 @@ var _ = Describe("SentPacketHandler", func() {
 			handler.numProbesToSend = 1
 			handler.ptoMode = SendPTOHandshake
 			Expect(handler.SendMode()).To(Equal(SendPTOHandshake))
-		})
-
-		It("says if it has pacing budget", func() {
-			cong.EXPECT().HasPacingBudget().Return(true)
-			Expect(handler.HasPacingBudget()).To(BeTrue())
-			cong.EXPECT().HasPacingBudget().Return(false)
-			Expect(handler.HasPacingBudget()).To(BeFalse())
-		})
-
-		It("returns the pacing delay", func() {
-			t := time.Now()
-			cong.EXPECT().TimeUntilSend(gomock.Any()).Return(t)
-			Expect(handler.TimeUntilSend()).To(Equal(t))
 		})
 	})
 

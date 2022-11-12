@@ -78,7 +78,11 @@ type sentPacketHandler struct {
 	bytesInFlight protocol.ByteCount
 
 	congestion congestion.SendAlgorithmWithDebugInfos
+	pacer      congestion.Pacer
 	rttStats   *utils.RTTStats
+
+	// If non-zero, artificailly limits the send rate.
+	maxBandwidth congestion.Bandwidth
 
 	// The number of times a PTO has been sent without receiving an ack.
 	ptoCount uint32
@@ -112,26 +116,34 @@ func newSentPacketHandler(
 	tracer logging.ConnectionTracer,
 	logger utils.Logger,
 ) *sentPacketHandler {
-	congestion := congestion.NewCubicSender(
-		congestion.DefaultClock{},
-		rttStats,
-		initialMaxDatagramSize,
-		true, // use Reno
-		tracer,
-	)
-
-	return &sentPacketHandler{
+	h := &sentPacketHandler{
 		peerCompletedAddressValidation: pers == protocol.PerspectiveServer,
 		peerAddressValidated:           pers == protocol.PerspectiveClient || clientAddressValidated,
 		initialPackets:                 newPacketNumberSpace(initialPN, false, rttStats),
 		handshakePackets:               newPacketNumberSpace(0, false, rttStats),
 		appDataPackets:                 newPacketNumberSpace(0, true, rttStats),
 		rttStats:                       rttStats,
-		congestion:                     congestion,
 		perspective:                    pers,
 		tracer:                         tracer,
 		logger:                         logger,
 	}
+
+	clock := congestion.DefaultClock{}
+
+	h.congestion = congestion.NewCubicSender(
+		clock,
+		rttStats,
+		initialMaxDatagramSize,
+		true, // use Reno
+		tracer,
+	)
+
+	h.pacer = congestion.NewPacer(
+		clock,
+		h.GetMaxBandwidth,
+	)
+
+	return h
 }
 
 func (h *sentPacketHandler) DropPackets(encLevel protocol.EncryptionLevel) {
@@ -282,6 +294,7 @@ func (h *sentPacketHandler) sentPacketImpl(packet *Packet) bool /* is ack-elicit
 		}
 	}
 	h.congestion.OnPacketSent(packet.SendTime, h.bytesInFlight, packet.PacketNumber, packet.Length, isAckEliciting)
+	h.pacer.SentPacket(packet.SendTime, packet.Length)
 
 	return isAckEliciting
 }
@@ -752,15 +765,16 @@ func (h *sentPacketHandler) SendMode() SendMode {
 }
 
 func (h *sentPacketHandler) TimeUntilSend() time.Time {
-	return h.congestion.TimeUntilSend(h.bytesInFlight)
+	return h.pacer.TimeUntilSend()
 }
 
 func (h *sentPacketHandler) HasPacingBudget() bool {
-	return h.congestion.HasPacingBudget()
+	return h.pacer.HasBudget()
 }
 
 func (h *sentPacketHandler) SetMaxDatagramSize(s protocol.ByteCount) {
 	h.congestion.SetMaxDatagramSize(s)
+	h.pacer.SetMaxDatagramSize(s)
 }
 
 func (h *sentPacketHandler) isAmplificationLimited() bool {
@@ -850,6 +864,17 @@ func (h *sentPacketHandler) SetHandshakeConfirmed() {
 	h.setLossDetectionTimer()
 }
 
-func (h *sentPacketHandler) BandwidthEstimate() congestion.Bandwidth {
-	return h.congestion.BandwidthEstimate()
+func (h *sentPacketHandler) GetMaxBandwidth() congestion.Bandwidth {
+	estimate := h.congestion.BandwidthEstimate()
+
+	if h.maxBandwidth > 0 && h.maxBandwidth < estimate {
+		// Limit our maximum bandwidth
+		return h.maxBandwidth
+	}
+
+	return estimate
+}
+
+func (h *sentPacketHandler) SetMaxBandwidth(limit congestion.Bandwidth) {
+	h.maxBandwidth = limit
 }

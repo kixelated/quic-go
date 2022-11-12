@@ -97,7 +97,6 @@ var _ = Describe("Cubic Sender", func() {
 		// At startup make sure we are at the default.
 		Expect(sender.GetCongestionWindow()).To(Equal(defaultWindowTCP))
 		// Make sure we can send.
-		Expect(sender.TimeUntilSend(0)).To(BeZero())
 		Expect(sender.CanSend(bytesInFlight)).To(BeTrue())
 		// And that window is un-affected.
 		Expect(sender.GetCongestionWindow()).To(Equal(defaultWindowTCP))
@@ -107,23 +106,11 @@ var _ = Describe("Cubic Sender", func() {
 		Expect(sender.CanSend(bytesInFlight)).To(BeFalse())
 	})
 
-	It("paces", func() {
-		rttStats.UpdateRTT(10*time.Millisecond, 0, time.Now())
-		clock.Advance(time.Hour)
-		// Fill the send window with data, then verify that we can't send.
-		SendAvailableSendWindow()
-		AckNPackets(1)
-		delay := sender.TimeUntilSend(bytesInFlight)
-		Expect(delay).ToNot(BeZero())
-		Expect(delay).ToNot(Equal(utils.InfDuration))
-	})
-
 	It("application limited slow start", func() {
 		// Send exactly 10 packets and ensure the CWND ends at 14 packets.
 		const numberOfAcks = 5
 		// At startup make sure we can send.
 		Expect(sender.CanSend(0)).To(BeTrue())
-		Expect(sender.TimeUntilSend(0)).To(BeZero())
 
 		SendAvailableSendWindow()
 		for i := 0; i < numberOfAcks; i++ {
@@ -139,10 +126,7 @@ var _ = Describe("Cubic Sender", func() {
 		const numberOfAcks = 20
 		// At startup make sure we can send.
 		Expect(sender.CanSend(0)).To(BeTrue())
-		Expect(sender.TimeUntilSend(0)).To(BeZero())
 		Expect(sender.BandwidthEstimate()).To(Equal(infBandwidth))
-		// Make sure we can send.
-		Expect(sender.TimeUntilSend(0)).To(BeZero())
 
 		for i := 0; i < numberOfAcks; i++ {
 			// Send our full send window.
