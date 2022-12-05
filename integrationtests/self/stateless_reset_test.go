@@ -8,9 +8,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/lucas-clemente/quic-go"
-	quicproxy "github.com/lucas-clemente/quic-go/integrationtests/tools/proxy"
-	"github.com/lucas-clemente/quic-go/internal/utils"
+	"github.com/kixelated/quic-go"
+	quicproxy "github.com/kixelated/quic-go/integrationtests/tools/proxy"
+	"github.com/kixelated/quic-go/internal/utils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -23,9 +23,9 @@ var _ = Describe("Stateless Resets", func() {
 		connIDLen := connIDLens[i]
 
 		It(fmt.Sprintf("sends and recognizes stateless resets, for %d byte connection IDs", connIDLen), func() {
-			statelessResetKey := make([]byte, 32)
-			rand.Read(statelessResetKey)
-			serverConfig := getQuicConfig(&quic.Config{StatelessResetKey: statelessResetKey})
+			var statelessResetKey quic.StatelessResetKey
+			rand.Read(statelessResetKey[:])
+			serverConfig := getQuicConfig(&quic.Config{StatelessResetKey: &statelessResetKey})
 
 			ln, err := quic.ListenAddr("localhost:0", getTLSConfig(), serverConfig)
 			Expect(err).ToNot(HaveOccurred())
