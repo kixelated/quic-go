@@ -6,12 +6,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lucas-clemente/quic-go/internal/ackhandler"
-	"github.com/lucas-clemente/quic-go/internal/flowcontrol"
-	"github.com/lucas-clemente/quic-go/internal/protocol"
-	"github.com/lucas-clemente/quic-go/internal/qerr"
-	"github.com/lucas-clemente/quic-go/internal/utils"
-	"github.com/lucas-clemente/quic-go/internal/wire"
+	"github.com/kixelated/quic-go/internal/ackhandler"
+	"github.com/kixelated/quic-go/internal/flowcontrol"
+	"github.com/kixelated/quic-go/internal/protocol"
+	"github.com/kixelated/quic-go/internal/qerr"
+	"github.com/kixelated/quic-go/internal/utils"
+	"github.com/kixelated/quic-go/internal/wire"
 )
 
 type sendStreamI interface {
@@ -125,7 +125,7 @@ func (s *sendStream) Write(p []byte) (int, error) {
 		var copied bool
 		var deadline time.Time
 		// As soon as dataForWriting becomes smaller than a certain size x, we copy all the data to a STREAM frame (s.nextFrame),
-		// which can the be popped the next time we assemble a packet.
+		// which can then be popped the next time we assemble a packet.
 		// This allows us to return Write() when all data but x bytes have been sent out.
 		// When the user now calls Close(), this is much more likely to happen before we popped that last STREAM frame,
 		// allowing us to set the FIN bit on that frame (instead of sending an empty STREAM frame with FIN).
