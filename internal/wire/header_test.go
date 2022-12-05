@@ -7,7 +7,7 @@ import (
 	"io"
 	mrand "math/rand"
 
-	"github.com/lucas-clemente/quic-go/internal/protocol"
+	"github.com/kixelated/quic-go/internal/protocol"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )

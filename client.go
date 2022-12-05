@@ -6,11 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strings"
 
-	"github.com/lucas-clemente/quic-go/internal/protocol"
-	"github.com/lucas-clemente/quic-go/internal/utils"
-	"github.com/lucas-clemente/quic-go/logging"
+	"github.com/kixelated/quic-go/internal/protocol"
+	"github.com/kixelated/quic-go/internal/utils"
+	"github.com/kixelated/quic-go/logging"
 )
 
 type client struct {
@@ -232,13 +231,10 @@ func newClient(
 		tlsConf = tlsConf.Clone()
 	}
 	if tlsConf.ServerName == "" {
-		sni := host
-		if strings.IndexByte(sni, ':') != -1 {
-			var err error
-			sni, _, err = net.SplitHostPort(sni)
-			if err != nil {
-				return nil, err
-			}
+		sni, _, err := net.SplitHostPort(host)
+		if err != nil {
+			// It's ok if net.SplitHostPort returns an error - it could be a hostname/IP address without a port.
+			sni = host
 		}
 
 		tlsConf.ServerName = sni

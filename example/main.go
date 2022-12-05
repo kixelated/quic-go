@@ -17,12 +17,12 @@ import (
 
 	_ "net/http/pprof"
 
-	"github.com/lucas-clemente/quic-go"
-	"github.com/lucas-clemente/quic-go/http3"
-	"github.com/lucas-clemente/quic-go/internal/testdata"
-	"github.com/lucas-clemente/quic-go/internal/utils"
-	"github.com/lucas-clemente/quic-go/logging"
-	"github.com/lucas-clemente/quic-go/qlog"
+	"github.com/kixelated/quic-go"
+	"github.com/kixelated/quic-go/http3"
+	"github.com/kixelated/quic-go/internal/testdata"
+	"github.com/kixelated/quic-go/internal/utils"
+	"github.com/kixelated/quic-go/logging"
+	"github.com/kixelated/quic-go/qlog"
 )
 
 type binds []string

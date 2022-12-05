@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lucas-clemente/quic-go/internal/protocol"
-	"github.com/lucas-clemente/quic-go/internal/utils"
+	"github.com/kixelated/quic-go/internal/protocol"
+	"github.com/kixelated/quic-go/internal/utils"
 )
 
 type baseFlowController struct {
@@ -47,7 +47,7 @@ func (c *baseFlowController) AddBytesSent(n protocol.ByteCount) {
 	c.bytesSent += n
 }
 
-// UpdateSendWindow is be called after receiving a MAX_{STREAM_}DATA frame.
+// UpdateSendWindow is called after receiving a MAX_{STREAM_}DATA frame.
 func (c *baseFlowController) UpdateSendWindow(offset protocol.ByteCount) {
 	if offset > c.sendWindow {
 		c.sendWindow = offset
