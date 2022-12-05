@@ -3,9 +3,9 @@ package qlog
 import (
 	"fmt"
 
-	"github.com/lucas-clemente/quic-go/internal/protocol"
-	"github.com/lucas-clemente/quic-go/internal/qerr"
-	"github.com/lucas-clemente/quic-go/logging"
+	"github.com/kixelated/quic-go/internal/protocol"
+	"github.com/kixelated/quic-go/internal/qerr"
+	"github.com/kixelated/quic-go/logging"
 )
 
 type owner uint8

@@ -9,11 +9,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/lucas-clemente/quic-go"
-	"github.com/lucas-clemente/quic-go/integrationtests/tools/israce"
-	"github.com/lucas-clemente/quic-go/internal/protocol"
-	"github.com/lucas-clemente/quic-go/internal/qerr"
-	"github.com/lucas-clemente/quic-go/logging"
+	"github.com/kixelated/quic-go"
+	"github.com/kixelated/quic-go/integrationtests/tools/israce"
+	"github.com/kixelated/quic-go/internal/protocol"
+	"github.com/kixelated/quic-go/internal/qerr"
+	"github.com/kixelated/quic-go/logging"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

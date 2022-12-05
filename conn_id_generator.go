@@ -3,10 +3,10 @@ package quic
 import (
 	"fmt"
 
-	"github.com/lucas-clemente/quic-go/internal/protocol"
-	"github.com/lucas-clemente/quic-go/internal/qerr"
-	"github.com/lucas-clemente/quic-go/internal/utils"
-	"github.com/lucas-clemente/quic-go/internal/wire"
+	"github.com/kixelated/quic-go/internal/protocol"
+	"github.com/kixelated/quic-go/internal/qerr"
+	"github.com/kixelated/quic-go/internal/utils"
+	"github.com/kixelated/quic-go/internal/wire"
 )
 
 type connIDGenerator struct {

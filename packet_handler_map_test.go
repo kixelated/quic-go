@@ -7,11 +7,11 @@ import (
 	"net"
 	"time"
 
-	mocklogging "github.com/lucas-clemente/quic-go/internal/mocks/logging"
-	"github.com/lucas-clemente/quic-go/internal/protocol"
-	"github.com/lucas-clemente/quic-go/internal/utils"
-	"github.com/lucas-clemente/quic-go/internal/wire"
-	"github.com/lucas-clemente/quic-go/logging"
+	mocklogging "github.com/kixelated/quic-go/internal/mocks/logging"
+	"github.com/kixelated/quic-go/internal/protocol"
+	"github.com/kixelated/quic-go/internal/utils"
+	"github.com/kixelated/quic-go/internal/wire"
+	"github.com/kixelated/quic-go/logging"
 
 	"github.com/golang/mock/gomock"
 
@@ -33,7 +33,7 @@ var _ = Describe("Packet Handler Map", func() {
 		packetChan chan packetToRead
 
 		connIDLen         int
-		statelessResetKey []byte
+		statelessResetKey *StatelessResetKey
 	)
 
 	getPacketWithPacketType := func(connID protocol.ConnectionID, t protocol.PacketType, length protocol.ByteCount) []byte {
@@ -440,9 +440,9 @@ var _ = Describe("Packet Handler Map", func() {
 
 			Context("generating", func() {
 				BeforeEach(func() {
-					key := make([]byte, 32)
-					rand.Read(key)
-					statelessResetKey = key
+					var key StatelessResetKey
+					rand.Read(key[:])
+					statelessResetKey = &key
 				})
 
 				It("generates stateless reset tokens", func() {

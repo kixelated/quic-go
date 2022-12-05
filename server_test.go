@@ -14,14 +14,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/lucas-clemente/quic-go/internal/handshake"
-	mocklogging "github.com/lucas-clemente/quic-go/internal/mocks/logging"
-	"github.com/lucas-clemente/quic-go/internal/protocol"
-	"github.com/lucas-clemente/quic-go/internal/qerr"
-	"github.com/lucas-clemente/quic-go/internal/testdata"
-	"github.com/lucas-clemente/quic-go/internal/utils"
-	"github.com/lucas-clemente/quic-go/internal/wire"
-	"github.com/lucas-clemente/quic-go/logging"
+	"github.com/kixelated/quic-go/internal/handshake"
+	mocklogging "github.com/kixelated/quic-go/internal/mocks/logging"
+	"github.com/kixelated/quic-go/internal/protocol"
+	"github.com/kixelated/quic-go/internal/qerr"
+	"github.com/kixelated/quic-go/internal/testdata"
+	"github.com/kixelated/quic-go/internal/utils"
+	"github.com/kixelated/quic-go/internal/wire"
+	"github.com/kixelated/quic-go/logging"
 
 	"github.com/golang/mock/gomock"
 
@@ -140,7 +140,7 @@ var _ = Describe("Server", func() {
 			HandshakeIdleTimeout:     1337 * time.Hour,
 			MaxIdleTimeout:           42 * time.Minute,
 			KeepAlivePeriod:          5 * time.Second,
-			StatelessResetKey:        []byte("foobar"),
+			StatelessResetKey:        &StatelessResetKey{'f', 'o', 'o', 'b', 'a', 'r'},
 			RequireAddressValidation: requireAddrVal,
 		}
 		ln, err := Listen(conn, tlsConf, &config)
@@ -152,7 +152,7 @@ var _ = Describe("Server", func() {
 		Expect(server.config.MaxIdleTimeout).To(Equal(42 * time.Minute))
 		Expect(reflect.ValueOf(server.config.RequireAddressValidation)).To(Equal(reflect.ValueOf(requireAddrVal)))
 		Expect(server.config.KeepAlivePeriod).To(Equal(5 * time.Second))
-		Expect(server.config.StatelessResetKey).To(Equal([]byte("foobar")))
+		Expect(server.config.StatelessResetKey).To(Equal(&StatelessResetKey{'f', 'o', 'o', 'b', 'a', 'r'}))
 		// stop the listener
 		Expect(ln.Close()).To(Succeed())
 	})

@@ -3,7 +3,7 @@ package http3
 import (
 	"io"
 
-	"github.com/lucas-clemente/quic-go"
+	"github.com/kixelated/quic-go"
 )
 
 // The HTTPStreamer allows taking over a HTTP/3 stream. The interface is implemented by:

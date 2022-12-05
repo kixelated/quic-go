@@ -12,12 +12,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/lucas-clemente/quic-go/internal/handshake"
-	"github.com/lucas-clemente/quic-go/internal/protocol"
-	"github.com/lucas-clemente/quic-go/internal/qerr"
-	"github.com/lucas-clemente/quic-go/internal/utils"
-	"github.com/lucas-clemente/quic-go/internal/wire"
-	"github.com/lucas-clemente/quic-go/logging"
+	"github.com/kixelated/quic-go/internal/handshake"
+	"github.com/kixelated/quic-go/internal/protocol"
+	"github.com/kixelated/quic-go/internal/qerr"
+	"github.com/kixelated/quic-go/internal/utils"
+	"github.com/kixelated/quic-go/internal/wire"
+	"github.com/kixelated/quic-go/logging"
 )
 
 // ErrServerClosed is returned by the Listener or EarlyListener's Accept method after a call to Close.
