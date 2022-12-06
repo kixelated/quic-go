@@ -1,9 +1,7 @@
 package http3
 
 import (
-	"context"
 	"io"
-	"net"
 
 	"github.com/kixelated/quic-go"
 )
@@ -17,24 +15,10 @@ type HTTPStreamer interface {
 	HTTPStream() Stream
 }
 
-type StreamCreator interface {
-	// Context returns a context that is cancelled when the underlying connection is closed.
-	Context() context.Context
-	OpenStream() (quic.Stream, error)
-	OpenStreamSync(context.Context) (quic.Stream, error)
-	OpenUniStream() (quic.SendStream, error)
-	OpenUniStreamSync(context.Context) (quic.SendStream, error)
-	LocalAddr() net.Addr
-	RemoteAddr() net.Addr
-	ConnectionState() quic.ConnectionState
-}
-
-var _ StreamCreator = quic.Connection(nil)
-
-// A Hijacker allows hijacking of the stream creating part of a quic.Session from a http.Response.Body.
+// A Hijacker allows hijacking of the connection from a http.Response.Body.
 // It is used by WebTransport to create WebTransport streams after a session has been established.
 type Hijacker interface {
-	StreamCreator() StreamCreator
+	Connection() quic.Connection
 }
 
 // The body of a http.Request or http.Response.
@@ -97,7 +81,7 @@ func newResponseBody(str Stream, conn quic.Connection, done chan<- struct{}) *hi
 	}
 }
 
-func (r *hijackableBody) StreamCreator() StreamCreator {
+func (r *hijackableBody) Connection() quic.Connection {
 	return r.conn
 }
 
