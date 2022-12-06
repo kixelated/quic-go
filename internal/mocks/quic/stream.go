@@ -118,6 +118,18 @@ func (mr *MockStreamMockRecorder) SetDeadline(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDeadline", reflect.TypeOf((*MockStream)(nil).SetDeadline), arg0)
 }
 
+// SetPriority mocks base method.
+func (m *MockStream) SetPriority(arg0 int) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetPriority", arg0)
+}
+
+// SetPriority indicates an expected call of SetPriority.
+func (mr *MockStreamMockRecorder) SetPriority(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPriority", reflect.TypeOf((*MockStream)(nil).SetPriority), arg0)
+}
+
 // SetReadDeadline mocks base method.
 func (m *MockStream) SetReadDeadline(arg0 time.Time) error {
 	m.ctrl.T.Helper()
