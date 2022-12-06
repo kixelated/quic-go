@@ -23,7 +23,6 @@ type cubicSender struct {
 	hybridSlowStart HybridSlowStart
 	rttStats        *utils.RTTStats
 	cubic           *Cubic
-	pacer           *pacer
 	clock           Clock
 
 	reno bool
@@ -107,21 +106,11 @@ func newCubicSender(
 		tracer:                     tracer,
 		maxDatagramSize:            initialMaxDatagramSize,
 	}
-	c.pacer = newPacer(c.BandwidthEstimate)
 	if c.tracer != nil {
 		c.lastState = logging.CongestionStateSlowStart
 		c.tracer.UpdatedCongestionState(logging.CongestionStateSlowStart)
 	}
 	return c
-}
-
-// TimeUntilSend returns when the next packet should be sent.
-func (c *cubicSender) TimeUntilSend(_ protocol.ByteCount) time.Time {
-	return c.pacer.TimeUntilSend()
-}
-
-func (c *cubicSender) HasPacingBudget() bool {
-	return c.pacer.Budget(c.clock.Now()) >= c.maxDatagramSize
 }
 
 func (c *cubicSender) maxCongestionWindow() protocol.ByteCount {
@@ -139,7 +128,6 @@ func (c *cubicSender) OnPacketSent(
 	bytes protocol.ByteCount,
 	isRetransmittable bool,
 ) {
-	c.pacer.SentPacket(sentTime, bytes)
 	if !isRetransmittable {
 		return
 	}
@@ -312,5 +300,4 @@ func (c *cubicSender) SetMaxDatagramSize(s protocol.ByteCount) {
 	if cwndIsMinCwnd {
 		c.congestionWindow = c.minCongestionWindow()
 	}
-	c.pacer.SetMaxDatagramSize(s)
 }

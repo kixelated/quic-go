@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/kixelated/quic-go/internal/ackhandler"
+	"github.com/kixelated/quic-go/internal/congestion"
 	"github.com/kixelated/quic-go/internal/flowcontrol"
 	"github.com/kixelated/quic-go/internal/handshake"
 	"github.com/kixelated/quic-go/internal/logutils"
@@ -2147,4 +2148,12 @@ func (s *connection) NextConnection() Connection {
 	<-s.HandshakeComplete().Done()
 	s.streamsMap.UseResetMaps()
 	return s
+}
+
+func (s *connection) GetMaxBandwidth() uint64 {
+	return uint64(s.sentPacketHandler.GetMaxBandwidth())
+}
+
+func (s *connection) SetMaxBandwidth(limit uint64) {
+	s.sentPacketHandler.SetMaxBandwidth(congestion.Bandwidth(limit))
 }

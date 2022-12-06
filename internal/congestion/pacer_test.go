@@ -11,6 +11,7 @@ import (
 
 var _ = Describe("Pacer", func() {
 	var p *pacer
+	var clock mockClock
 
 	const packetsPerSecond = 50
 	var bandwidth uint64 // in bytes/s
@@ -19,7 +20,7 @@ var _ = Describe("Pacer", func() {
 		bandwidth = uint64(packetsPerSecond * initialMaxDatagramSize) // 50 full-size packets per second
 		// The pacer will multiply the bandwidth with 1.25 to achieve a slightly higher pacing speed.
 		// For the tests, cancel out this factor, so we can do the math using the exact bandwidth.
-		p = newPacer(func() Bandwidth { return Bandwidth(bandwidth) * BytesPerSecond * 4 / 5 })
+		p = NewPacer(&clock, func() Bandwidth { return Bandwidth(bandwidth) * BytesPerSecond * 4 / 5 })
 	})
 
 	It("allows a burst at the beginning", func() {

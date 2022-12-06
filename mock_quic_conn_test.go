@@ -108,6 +108,20 @@ func (mr *MockQuicConnMockRecorder) Context() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockQuicConn)(nil).Context))
 }
 
+// GetMaxBandwidth mocks base method.
+func (m *MockQuicConn) GetMaxBandwidth() uint64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMaxBandwidth")
+	ret0, _ := ret[0].(uint64)
+	return ret0
+}
+
+// GetMaxBandwidth indicates an expected call of GetMaxBandwidth.
+func (mr *MockQuicConnMockRecorder) GetMaxBandwidth() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMaxBandwidth", reflect.TypeOf((*MockQuicConn)(nil).GetMaxBandwidth))
+}
+
 // GetVersion mocks base method.
 func (m *MockQuicConn) GetVersion() protocol.VersionNumber {
 	m.ctrl.T.Helper()
@@ -265,6 +279,18 @@ func (m *MockQuicConn) SendMessage(arg0 []byte) error {
 func (mr *MockQuicConnMockRecorder) SendMessage(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessage", reflect.TypeOf((*MockQuicConn)(nil).SendMessage), arg0)
+}
+
+// SetMaxBandwidth mocks base method.
+func (m *MockQuicConn) SetMaxBandwidth(limit uint64) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetMaxBandwidth", limit)
+}
+
+// SetMaxBandwidth indicates an expected call of SetMaxBandwidth.
+func (mr *MockQuicConnMockRecorder) SetMaxBandwidth(limit interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMaxBandwidth", reflect.TypeOf((*MockQuicConn)(nil).SetMaxBandwidth), limit)
 }
 
 // destroy mocks base method.

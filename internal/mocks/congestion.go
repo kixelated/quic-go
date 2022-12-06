@@ -9,6 +9,7 @@ import (
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
+	congestion "github.com/kixelated/quic-go/internal/congestion"
 	protocol "github.com/kixelated/quic-go/internal/protocol"
 )
 
@@ -33,6 +34,20 @@ func NewMockSendAlgorithmWithDebugInfos(ctrl *gomock.Controller) *MockSendAlgori
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockSendAlgorithmWithDebugInfos) EXPECT() *MockSendAlgorithmWithDebugInfosMockRecorder {
 	return m.recorder
+}
+
+// BandwidthEstimate mocks base method.
+func (m *MockSendAlgorithmWithDebugInfos) BandwidthEstimate() congestion.Bandwidth {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BandwidthEstimate")
+	ret0, _ := ret[0].(congestion.Bandwidth)
+	return ret0
+}
+
+// BandwidthEstimate indicates an expected call of BandwidthEstimate.
+func (mr *MockSendAlgorithmWithDebugInfosMockRecorder) BandwidthEstimate() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BandwidthEstimate", reflect.TypeOf((*MockSendAlgorithmWithDebugInfos)(nil).BandwidthEstimate))
 }
 
 // CanSend mocks base method.
@@ -61,20 +76,6 @@ func (m *MockSendAlgorithmWithDebugInfos) GetCongestionWindow() protocol.ByteCou
 func (mr *MockSendAlgorithmWithDebugInfosMockRecorder) GetCongestionWindow() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCongestionWindow", reflect.TypeOf((*MockSendAlgorithmWithDebugInfos)(nil).GetCongestionWindow))
-}
-
-// HasPacingBudget mocks base method.
-func (m *MockSendAlgorithmWithDebugInfos) HasPacingBudget() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HasPacingBudget")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// HasPacingBudget indicates an expected call of HasPacingBudget.
-func (mr *MockSendAlgorithmWithDebugInfosMockRecorder) HasPacingBudget() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasPacingBudget", reflect.TypeOf((*MockSendAlgorithmWithDebugInfos)(nil).HasPacingBudget))
 }
 
 // InRecovery mocks base method.
@@ -175,18 +176,4 @@ func (m *MockSendAlgorithmWithDebugInfos) SetMaxDatagramSize(arg0 protocol.ByteC
 func (mr *MockSendAlgorithmWithDebugInfosMockRecorder) SetMaxDatagramSize(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMaxDatagramSize", reflect.TypeOf((*MockSendAlgorithmWithDebugInfos)(nil).SetMaxDatagramSize), arg0)
-}
-
-// TimeUntilSend mocks base method.
-func (m *MockSendAlgorithmWithDebugInfos) TimeUntilSend(arg0 protocol.ByteCount) time.Time {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TimeUntilSend", arg0)
-	ret0, _ := ret[0].(time.Time)
-	return ret0
-}
-
-// TimeUntilSend indicates an expected call of TimeUntilSend.
-func (mr *MockSendAlgorithmWithDebugInfosMockRecorder) TimeUntilSend(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TimeUntilSend", reflect.TypeOf((*MockSendAlgorithmWithDebugInfos)(nil).TimeUntilSend), arg0)
 }

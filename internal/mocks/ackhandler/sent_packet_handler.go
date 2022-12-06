@@ -10,6 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	ackhandler "github.com/kixelated/quic-go/internal/ackhandler"
+	congestion "github.com/kixelated/quic-go/internal/congestion"
 	protocol "github.com/kixelated/quic-go/internal/protocol"
 	wire "github.com/kixelated/quic-go/internal/wire"
 )
@@ -61,6 +62,20 @@ func (m *MockSentPacketHandler) GetLossDetectionTimeout() time.Time {
 func (mr *MockSentPacketHandlerMockRecorder) GetLossDetectionTimeout() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLossDetectionTimeout", reflect.TypeOf((*MockSentPacketHandler)(nil).GetLossDetectionTimeout))
+}
+
+// GetMaxBandwidth mocks base method.
+func (m *MockSentPacketHandler) GetMaxBandwidth() congestion.Bandwidth {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMaxBandwidth")
+	ret0, _ := ret[0].(congestion.Bandwidth)
+	return ret0
+}
+
+// GetMaxBandwidth indicates an expected call of GetMaxBandwidth.
+func (mr *MockSentPacketHandlerMockRecorder) GetMaxBandwidth() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMaxBandwidth", reflect.TypeOf((*MockSentPacketHandler)(nil).GetMaxBandwidth))
 }
 
 // HasPacingBudget mocks base method.
@@ -211,6 +226,18 @@ func (m *MockSentPacketHandler) SetHandshakeConfirmed() {
 func (mr *MockSentPacketHandlerMockRecorder) SetHandshakeConfirmed() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHandshakeConfirmed", reflect.TypeOf((*MockSentPacketHandler)(nil).SetHandshakeConfirmed))
+}
+
+// SetMaxBandwidth mocks base method.
+func (m *MockSentPacketHandler) SetMaxBandwidth(arg0 congestion.Bandwidth) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetMaxBandwidth", arg0)
+}
+
+// SetMaxBandwidth indicates an expected call of SetMaxBandwidth.
+func (mr *MockSentPacketHandlerMockRecorder) SetMaxBandwidth(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMaxBandwidth", reflect.TypeOf((*MockSentPacketHandler)(nil).SetMaxBandwidth), arg0)
 }
 
 // SetMaxDatagramSize mocks base method.
